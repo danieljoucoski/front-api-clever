@@ -39,42 +39,18 @@ function formatarResposta(resultado) {
     return html;
 }
 
-async function calcularIMC() {
-    const dados = {
-        nome: document.getElementById("nome").value,
-        idade: document.getElementById("idade").value,
-        altura: document.getElementById("altura").value,
-        peso: document.getElementById("peso").value
-    };
-
-    try {
-        const res = await fetch("http://localhost:3000/imc", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(dados)
-        });
-
-        const resultado = await res.json();
-        document.getElementById("resultadoIMC").innerHTML = formatarResposta(resultado);
-    } catch (erro) {
-        document.getElementById("resultadoIMC").innerHTML = formatarResposta({ erro: "Falha na comunicação com o servidor." });
-    }
-}
-
 async function cadastrarCliente() {
     const dados = {
-        cpf: document.getElementById("cliente_cpf").value,
-        nome: document.getElementById("cliente_nome").value,
-        idade: document.getElementById("cliente_idade").value,
-        endereco: document.getElementById("cliente_endereco").value,
-        bairro: document.getElementById("cliente_bairro").value,
-        contato: document.getElementById("cliente_contato").value
+        cliente_cpf: document.getElementById("cliente_cpf").value,
+        cliente_nome: document.getElementById("cliente_nome").value,
+        cliente_idade: document.getElementById("cliente_idade").value,
+        cliente_endereco: document.getElementById("cliente_endereco").value,
+        cliente_bairro: document.getElementById("cliente_bairro").value,
+        cliente_contato: document.getElementById("cliente_contato").value
     };
 
     try {
-        const res = await fetch("http://localhost:3000/clientes", {
+        const res = await fetch("http://localhost:3000/api/clientes", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -91,12 +67,12 @@ async function cadastrarCliente() {
 
 async function login() {
     const dados = {
-        user: document.getElementById("user").value,
+        email: document.getElementById("user").value,
         senha: document.getElementById("senha").value
-    }
+    };
 
     try {
-        const res = await fetch("http://localhost:3000/login", {
+        const res = await fetch("http://localhost:3000/api/users/login", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -105,12 +81,14 @@ async function login() {
         });
 
         const resultado = await res.json();
-        if (resultado.token) {
+
+        if (res.ok && resultado.token) {
             localStorage.setItem("token", resultado.token);
             window.location.href = "index.html";
         } else {
-            alert("Login inválido!");
+            alert(resultado.mensagem || "Login inválido!");
         }
+
     } catch (erro) {
         alert("Falha na comunicação com o servidor.");
     }
@@ -124,7 +102,7 @@ async function cadastrarUsuario() {
     }
 
     try {
-        const res = await fetch("http://localhost:3000/usuarios", {
+        const res = await fetch("http://localhost:3000/api/users", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -155,7 +133,7 @@ async function listarClientes() {
     if (buscaInput) buscaInput.value = "";
 
     try {
-        const res = await fetch("http://localhost:3000/clientes");
+        const res = await fetch("http://localhost:3000/api/clientes");
         const clientes = await res.json();
         renderizarClientes(clientes);
     } catch (erro) {
@@ -174,13 +152,29 @@ async function buscarClientes() {
     }
 
     try {
-        const res = await fetch("http://localhost:3000/clientes");
+        const res = await fetch("http://localhost:3000/api/clientes");
         const clientes = await res.json();
         
         // Filtrar pelo CPF ignorando caracteres não numéricos
-        const cpfLimpo = cpfBusca.replace(/\D/g, '');
-        const filtrados = clientes.filter(c => c.cpf && c.cpf.replace(/\D/g, '') === cpfLimpo);
+    
+        const filtrados = clientes.filter(cliente => {
+            const nome = String(cliente.cliente_nome || "").toLowerCase();
+            const cpf = String(cliente.cliente_cpf || "").toLowerCase();
+
+            return nome.includes(cpfBusca) || cpf.includes(cpfBusca);
+        });
+
+        console.log("clientes encontrados:", filtrados);
+
         renderizarClientes(filtrados);
+
+
+
+
+
+
+
+
     } catch (erro) {
         const container = document.getElementById("listaClientes");
         if (container) {
@@ -202,11 +196,11 @@ function renderizarClientes(clientes) {
     clientes.forEach(cliente => {
         html += `
             <div class="client-card">
-                <h3>${cliente.nome || 'Sem Nome'}</h3>
-                <p><strong>CPF:</strong> ${cliente.cpf || '-'}</p>
-                <p><strong>Idade:</strong> ${cliente.idade || '-'} anos</p>
-                <p><strong>Endereço:</strong> ${cliente.endereco || '-'}, ${cliente.bairro || '-'}</p>
-                <p><strong>Contato:</strong> ${cliente.contato || '-'}</p>
+                <h3>${cliente.cliente_nome || 'Sem Nome'}</h3>
+                <p><strong>CPF:</strong> ${cliente.cliente_cpf || '-'}</p>
+                <p><strong>Idade:</strong> ${cliente.cliente_idade || '-'} anos</p>
+                <p><strong>Endereço:</strong> ${cliente.cliente_endereco || '-'}, ${cliente.cliente_bairro || '-'}</p>
+                <p><strong>Contato:</strong> ${cliente.cliente_contato || '-'}</p>
             </div>
         `;
     });
